@@ -1,33 +1,22 @@
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mysql-data-disk
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mysql-deployment
+  name: mysql-write-deployment
   labels:
-    app: mysql
+    app: mysql-write
 spec:
-  replicas: 1
+  replicas: 5
   selector:
     matchLabels:
-      app: mysql
+      app: mysql-write
   template:
     metadata:
       labels:
-        app: mysql
+        app: mysql-write
     spec:
       containers:
-        - name: mysql
+        - name: mysql-write
           image: mysql:5.7
           ports:
             - containerPort: 3306
@@ -37,7 +26,11 @@ spec:
               name: mysql-data
           env:
             - name: MYSQL_ROOT_PASSWORD
-              value: "root123"
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secrets-adv
+                  key: MYSQL_ROOT_PASSWORD
+
       volumes:
         - name: mysql-data
           persistentVolumeClaim:
@@ -46,10 +39,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mysql-service
+  name: mysql-write-service
 spec:
   selector:
-    app: mysql
+    app: mysql-write
   ports:
   - protocol: TCP
     port: 3306
